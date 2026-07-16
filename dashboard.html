@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <script src="lunar.js"></script>
+    <style>
+        body { margin: 0; background: #000; color: #fff; display: flex; height: 100vh; font-family: sans-serif; overflow: hidden; }
+        
+        /* 左側：時鐘資訊 (35%) */
+        #clock-side { flex: 0 0 35%; display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 2px solid #333; overflow: hidden; }
+        #time { font-size: 15rem; font-weight: bold; }
+        #date { font-size: 3.5rem; color: #E4B028; margin-top: 10px; }
+        #lunar-term { font-size: 3rem; color: #FF8F00; margin-top: 10px; }
+        #lunar-date { font-size: 3rem; color: #E4B028; margin-top: 10px; }
+        
+        /* 右側：天氣資訊 (65%) */
+        #weather-side { flex: 0 0 65%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow: hidden;}
+        
+        /* 指定字體大小 */
+        .temp { font-size: 8rem; font-weight: bold; }
+        #hum { font-size: 4rem; color: #65DCD5; margin: 10px 0; }
+        #warning-info { font-size: 3rem; color: #FF4444; font-weight: bold; margin: 20px 0; }
+        #sp-remaind { font-size: 2.5rem; color: #FF8F00; padding: 0 40px; line-height: 1.2; }
+        #update-time { font-size: 1.5rem; color: #fff; margin-top: 30px; }
+
+        /* 主要天氣大小 */
+        .weather-main {
+        display: flex;
+        align-items: center; /* 垂直置中 */
+        justify-content: center;
+        gap: 20px; /* 元素之間的間距 */
+        margin-bottom: 0px;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="clock-side">
+        <div id="time">00:00</div>
+        <div id="date">--/--/----</div>
+        <div id="lunar-term">節氣：--</div>
+        <div id="lunar-date">--年 --月 --日</div>
+    </div>
+    
+<div id="weather-side">
+    <div class="weather-main">
+        <img id="weather-icon" src="" alt="天氣狀況" style="width: 100px; height: 100px;">
+        <div class="temp" id="temp">--°C</div>
+        <div id="hum">濕度：--%</div>
+    </div>
+    
+    <div id="warning-info">無生效警告</div>
+    <div id="sp-remaind">無特別天氣提示</div>
+    <div id="update-time">最後更新：--:--</div>
+</div>
+
+
+
+    <script>
+        function updateDisplay() {
+            const now = new Date();
+            // 更新時間
+            document.getElementById('time').innerText = now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+            document.getElementById('date').innerText = now.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+            
+            // 使用 lunar.js 計算農曆 (lunar.js 預設匯出為 Lunar)
+            const d = Lunar.fromDate(now);
+            document.getElementById('lunar-term').innerText = "節氣：" + (d.getJieQi() || "無");
+            document.getElementById('lunar-date').innerText = `${d.getYearInGanZhiExact()}年 ${d.getMonthInGanZhiExact()}月 ${d.getDayInGanZhiExact2()}日`;
+            
+            // 每日凌晨自動重整頁面，防止瀏覽器記憶體堆積
+            if (now.getHours() === 4 && now.getMinutes() === 0 && now.getSeconds() === 0) {
+                location.reload();
+            }
+        }
+
+        // 天氣 API 獲取
+        async function fetchAllWeatherInfo() {
+    const rhrUrl = "https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc";
+    const flwUrl = "https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=flw&lang=tc";
+    const swtUrl = "https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=swt&lang=tc";
+    const warnUrl = "https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=tc";
+
+    try {
+        // 同時獲取兩個 API 資料
+        const [rhrRes, flwRes, swtRes, warnRes] = await Promise.all([
+            fetch(rhrUrl), 
+            fetch(flwUrl), 
+            fetch(swtUrl),
+            fetch(warnUrl)]);        
+        const rhrData = await rhrRes.json();
+        const flwData = await flwRes.json();
+        const swtData = await swtRes.json();
+        const warnData = await warnRes.json();
+
+
+        // 1. 氣溫 & 濕度 (來自 rhrread)
+        const tempObj = rhrData.temperature.data.find(i => i.place === '香港天文台');
+        const humObj = rhrData.humidity.data.find(i => i.place === '香港天文台');
+        document.getElementById('temp').innerText = tempObj.value + '°C';
+        document.getElementById('hum').innerText = `濕度：${humObj.value}%`;
+
+// 3. 更新警告資訊 (包含暴雨顏色與風球號碼)
+const warnElement = document.getElementById('warning-info');
+
+if (warnElement) {
+    try {
+        const warnings = Object.values(warnData);
+        
+        // 篩選有效的警告 (排除 CANCEL)
+        const active = warnings.filter(w => w.actionCode && w.actionCode !== "CANCEL");
+        
+        if (active.length > 0) {
+            warnElement.innerText = active.map(w => {
+                // 1. 處理暴雨警告 (顯示顏色)
+                if (w.code && w.code.includes("WRAIN")) {
+                    return `${w.type}${w.name}`;
+                }
+                // 2. 處理風球 (將代碼轉換為具體名稱)
+                if (w.code && w.code.includes("TC")) {
+                    const tcMap = {
+                        "TC1": "一號戒備信號",
+                        "TC3": "三號強風信號",
+                        "TC8NE": "八號東北烈風或暴風信號",
+                        "TC8SE": "八號東南烈風或暴風信號",
+                        "TC8NW": "八號西北烈風或暴風信號",
+                        "TC8SW": "八號西南烈風或暴風信號",
+                        "TC9": "九號烈風或暴風風力增強信號",
+                        "TC10": "十號颶風信號"
+                    };
+                    return tcMap[w.code] || w.name;
+                }
+                // 3. 其他警告 (直接顯示名稱)
+                return w.name;
+            }).join("、");
+        } else {
+            warnElement.innerText = "無生效警告";
+        }
+    } catch (err) {
+        console.error("資料回傳錯誤:", err);
+        warnElement.innerText = "無生效警告";
+    }
+}
+
+
+
+     
+        // 3. 特別提示資訊 (來自 swt)
+        document.getElementById('sp-remaind').innerText = (swtData.swt && swtData.swt.length > 0) 
+        ? swtData.swt.map(item => item.desc).join("\n") : "無天氣提示";
+
+        // 4. 更新時間 (來自 rhrread)
+        document.getElementById('update-time').innerText = `最後更新：${rhrData.updateTime.substring(11, 16)}`;
+
+        const iconCode = rhrData.icon[0]; // 取得第一個圖示代碼
+        const iconElement = document.getElementById('weather-icon');
+        iconElement.src = `https://www.hko.gov.hk/images/HKOWxIconOutline/pic${iconCode}.png`;
+        
+
+    } catch (e) {
+        console.error("更新天氣失敗:", e);
+    }
+}
+
+
+
+
+        setInterval(updateDisplay, 1000);
+        updateDisplay();
+        fetchAllWeatherInfo();
+        setInterval(fetchAllWeatherInfo, 600000); // 每 10 分鐘自動更新
+    </script>
+</body>
+</html>
