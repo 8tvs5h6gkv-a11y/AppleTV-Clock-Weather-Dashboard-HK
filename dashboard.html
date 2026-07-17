@@ -9,10 +9,16 @@
         
         /* 左側：時鐘資訊 (35%) */
         #clock-side { flex: 0 0 35%; display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 2px solid #333; overflow: hidden; }
-        #time { font-size: 7.25rem; font-weight: bold; }
-        #date { font-size: 2rem; color: #E4B028; }
-        #lunar-term { font-size: 2rem; color: #FF8F00; }
-        #lunar-date { font-size: 2rem; color: #E4B028; }
+
+        /* 將 #time 改為 flex 容器，實現上下排列 */
+        #time { display: flex; flex-direction: column; align-items: center; line-height: 0.9; /* 調整兩行數字的距離，數值越小越近 */ }
+
+        /* 設定小時與分鐘的字體大小 */
+        #hour, #minute { font-size: 15rem; font-weight: bold; }
+
+        #date { font-size: 3.5rem; color: #E4B028; margin-top: 10px; }
+        #lunar-term { font-size: 3rem; color: #FF8F00; margin-top: 10px; }
+        #lunar-date { font-size: 3rem; color: #E4B028; margin-top: 10px; }
         
         /* 右側：天氣資訊 (65%) */
         #weather-side { flex: 0 0 65%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow: hidden;}
@@ -36,12 +42,16 @@
     </style>
 </head>
 <body>
-    <div id="clock-side">
-        <div id="time">00:00</div>
-        <div id="date">--/--/----</div>
-        <div id="lunar-term">節氣：--</div>
-        <div id="lunar-date">--年 --月 --日</div>
+<div id="clock-side">
+    <div id="time">
+        <span id="hour">00</span>
+        <span id="minute">00</span>
     </div>
+    <div id="date">--/--/----</div>
+    <div id="lunar-term">節氣：--</div>
+    <div id="lunar-date">--年 --月 --日</div>
+</div>
+
     
 <div id="weather-side">
     <div class="weather-main">
@@ -60,8 +70,12 @@
     <script>
         function updateDisplay() {
             const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
             // 更新時間
-            document.getElementById('time').innerText = now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+            document.getElementById('hour').innerText = hours;
+            document.getElementById('minute').innerText = minutes;
             document.getElementById('date').innerText = now.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
             
             // 使用 lunar.js 計算農曆 (lunar.js 預設匯出為 Lunar)
