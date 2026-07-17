@@ -165,7 +165,7 @@ if (warnElement) {
      
         // 3. 特別提示資訊 (來自 swt)
         document.getElementById('sp-remaind').innerText = (swtData.swt && swtData.swt.length > 0) 
-        ? swtData.swt.map(item => item.desc).join("\n") : "暫無特別天氣提示";
+        ? swtData.swt.map(item => item.desc).join("\n") : "";
 
         // 4. 更新時間 (來自 rhrread)
         document.getElementById('update-time').innerText = `最後更新：${rhrData.updateTime.substring(11, 16)}`;
