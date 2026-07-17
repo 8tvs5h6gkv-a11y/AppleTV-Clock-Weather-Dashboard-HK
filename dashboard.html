@@ -99,7 +99,7 @@
         const tempObj = rhrData.temperature.data.find(i => i.place === '香港天文台');
         const humObj = rhrData.humidity.data.find(i => i.place === '香港天文台');
         document.getElementById('temp').innerText = tempObj.value + '°C';
-        document.getElementById('hum').innerText = `濕度：${humObj.value}%`;
+        document.getElementById('hum').innerHTML = `濕度：<br>${humObj.value}%`;
 
 // 3. 更新警告資訊 (包含暴雨顏色與風球號碼)
 const warnElement = document.getElementById('warning-info');
