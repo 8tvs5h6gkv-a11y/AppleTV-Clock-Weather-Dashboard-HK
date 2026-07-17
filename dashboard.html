@@ -27,7 +27,7 @@
         .temp { font-size: 6rem; font-weight: bold; }
         #hum { font-size: 2rem; color: #65DCD5; }
         #warning-info { font-size: 2rem; color: #FF4444; font-weight: bold; }
-        #sp-remaind { font-size: 1.75rem; color: #FF8F00; padding: 0 40px; line-height: 1.2; }
+        #sp-remaind { font-size: 1.75rem; color: #E4B028; padding: 0 40px; line-height: 1.2; }
         #update-time { font-size: 0.85rem; color: #fff; }
 
         /* 主要天氣大小 */
@@ -60,8 +60,8 @@
         <div id="hum">濕度：--%</div>
     </div>
     
-    <div id="warning-info">無生效警告</div>
-    <div id="sp-remaind">無特別天氣提示</div>
+    <div id="warning-info"></div>
+    <div id="sp-remaind"></div>
     <div id="update-time">最後更新：--:--</div>
 </div>
 
@@ -152,11 +152,11 @@ if (warnElement) {
                 return w.name;
             }).join("、");
         } else {
-            warnElement.innerText = "暫無生效警告";
+            warnElement.innerText = "";
         }
     } catch (err) {
         console.error("資料回傳錯誤:", err);
-        warnElement.innerText = "暫無生效警告";
+        warnElement.innerText = "";
     }
 }
 
